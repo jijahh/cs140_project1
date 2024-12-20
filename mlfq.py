@@ -46,9 +46,21 @@ class MLFQ:
         self.time = 0
         self.queue_list = [Queue_1(queue1_time_allotment), Queue_2(queue2_time_allotment), Queue_3()]
         self.active_queue = queue_list[0]
-        self.not_done = processes
+        self.not_arrived = processes
         self.context_switch_time = context_switch_time
-        self.state = True
+    def run(self):
+        while self.not_arrived:
+            for process in self.not_arrived:
+                if process.arrival_time == self.time:
+                    process.has_arrived = True
+                    self.queue_list[0].ready_queue.append(process)
+                    process.has_arrived = True
+                    self.not_arrived.remove(process)
+            if self.context_switch_time > 0:
+                self.context_switch_time -= 1
+                continue
+            self.active_queue.run()
+            self.time += 1
 
 
 print("# Enter Scheduler Details #")
@@ -73,3 +85,4 @@ for i in range(num_processes):
     processes.append(Process(process_name, burst_times, io_times, arrival_time))
 
 mlfq = MLFQ(num_processes, queue1_time_allotment, queue2_time_allotment, context_switch_time, processes)
+mlfq.run()
