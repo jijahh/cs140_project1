@@ -207,7 +207,9 @@ class MLFQ:
                 if i.ready_queue:
                     self.active_queue = i
                     break
+            io_done = []
             for process in self.in_io:
+                print(process.name, process.io_times[0])
                 if process.io_times[0] == 0:
                     del process.io_times[0]
                     if process.check_done():
@@ -217,9 +219,12 @@ class MLFQ:
                         self.to_print[1].append(process.name)
                     else:
                         self.queue_list[process.queue].enqueue(process)
-                    self.in_io.remove(process)
+                    io_done.append(process)
                 else:
                     process.io_times[0] -= 1
+            for i in io_done:
+                self.in_io.remove(i)
+            io_done = []
             self.queue_list[2].enqueue_everything()
             for i in range(len(self.queue_list)):
                 if self.queue_list[i].ready_queue:
