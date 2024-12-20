@@ -25,10 +25,10 @@ class Process:
         return self.check_burst() and self.check_io()
 
     def check_burst(self):
-        return burst_times == []
+        return self.burst_times == []
 
     def check_io(self):
-        return io_times == []
+        return self.io_times == []
 
 
 class Queue:
@@ -47,10 +47,14 @@ class Queue_1(Queue):
         self.is_context_switching = False
 
     def run(self, mlfq):
+        if not self.ready_queue:
+            return
         if self.running_process is None:
             self.running_process = self.ready_queue[0]
+        self.curr_time_quantum -= 1 
         self.running_process.burst_times[0] -= 1
         self.running_process.time_allotment -= 1
+        print(self.running_process.time_allotment)
         if self.running_process.burst_times[0] == 0:
             del self.running_process.burst_times[0]
             if not self.running_process.check_io():
@@ -71,6 +75,7 @@ class Queue_1(Queue):
         if self.curr_time_quantum == 0:
             self.ready_queue.append(self.running_process)
             del self.ready_queue[0]
+            self.curr_time_quantum = self.time_quantum
             self.running_process = None
 
     def enqueue(self, process):
@@ -84,6 +89,8 @@ class Queue_2(Queue):
         self.time_allotment = time_allotment
 
     def run(self, mlfq):
+        if not self.ready_queue:
+            return
         if self.running_process is None:
             self.running_process = self.ready_queue[0]
         self.running_process.burst_times[0] -= 1
@@ -117,7 +124,7 @@ class Queue_3(Queue):
         self.enqueue_list = []
         
     def run(self, mlfq):
-        print(self.ready_queue)
+        # print(self.ready_queue)
 
         if self.running_process is None:
             self.running_process = self.ready_queue[0]
@@ -130,8 +137,8 @@ class Queue_3(Queue):
             else:
                 self.running_process.is_done = True
                 self.running_process.finish_time = mlfq.time
-                mlfq.to_print[1].append(process.name)
-                mlfq.done_processes.append(running_process)
+                mlfq.to_print[1].append(self.running_process.name)
+                mlfq.done_processes.append(self.running_process)
             self.ready_queue.remove(self.running_process)
             self.running_process = None
 
@@ -143,8 +150,8 @@ class Queue_3(Queue):
             self.enqueue_list, key=lambda x: sum(x.burst_times) + sum(x.io_times)
         )
         if self.enqueue_list != []:
-            self.ready_queue.append(self.enqueue_list)
-
+            self.ready_queue = self.ready_queue + self.enqueue_list
+        self.enqueue_list = []
 
 class MLFQ:
     def __init__(
@@ -174,16 +181,16 @@ class MLFQ:
 
     def run(self):
         while True:
-            self.queue_list[2].enqueue_everything()
             self.not_arrived = list(filter(lambda x: x.has_arrived == False, self.not_arrived))
             for process in self.not_arrived:
                 if process.arrival_time == self.time:
                     self.to_print[0].append(process.name)
                     process.has_arrived = True
                     self.queue_list[0].enqueue(process)
+            # print(self.active_queue.name)
             self.active_queue.run(self)
             for process in self.in_io:
-                if process.io_times[process.io_index] == 0:
+                if process.io_times[0]== 0:
                     del process.io_times[0]
                     if process.check_done():
                         self.done_processes.append(process)
@@ -195,6 +202,7 @@ class MLFQ:
                     self.in_io.remove(process)
                 else:
                     process.io_times[0] -= 1
+            self.queue_list[2].enqueue_everything()
             for i in range(len(self.queue_list)):
                 for j in self.queue_list[i].ready_queue:
                     if j != []:
@@ -206,7 +214,7 @@ class MLFQ:
                     self.active_queue = i
                     break
             for process in self.in_io:
-                to_print[4].append(process.name)
+                self.to_print[4].append(process.name)
             self.print_everything()
             if self.check_done():
                 self.done()
@@ -233,7 +241,7 @@ class MLFQ:
         for i in self.to_print[1]:
             print(f"{i} DONE")
         print("Queues :", end=" ")
-        print(self.to_print[2])
+        print([x[1:] if x else [] for x in self.to_print[2] ])
         print(f"CPU: {self.to_print[3]}")
         print(f"I/O: {self.to_print[4]}")
         for i in self.to_print[5]:
