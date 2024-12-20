@@ -36,11 +36,41 @@ class Queue_2(Queue):
     def __init__(self, time_allotment):
         super().__init__('queue_2')
         self.time_allotment = time_allotment
+    def run(self, MLFQ):
+        if self.ready_queue:
+            curr_process = self.ready_queue.pop(0)
+            curr_process.queue = self
+            curr_process.state = True 
+            curr_process.is_waiting = False
+            curr_burst = curr_process.burst_times[0]
+            curr_burst -= time_allotment
+
 
 class Queue_3(Queue):
     def __init__(self):
         super().__init__('queue_3')
-
+    def run(self, MLFQ):
+        if self.ready_queue:
+            remaining = [(sum(process.burst_times) + sum(process.io_times)) for process in self.ready_queue] 
+            curr_process = min(remaining)
+            curr_process.queue = self
+            curr_process.state = True  
+            curr_process.is_waiting = False
+            curr_burst = curr_process.burst_times.pop(0)
+            MLFQ.time -= curr_burst 
+            
+            if not curr_process.burst_times and not curr_process.io_times:
+                curr_process.is_done = True
+                curr_process.finish_time = time
+            else:
+                MLFQ.is_context_switching = True 
+                if curr_process.io_times[0] == 0:
+                    curr_process.queue.ready_queue.append(curr_process)
+                else:
+                    MLFQ.in_io.append(curr_process)
+        else:
+            pass
+        
 class MLFQ:
     def __init__(self, num_processes, queue1_time_allotment, queue2_time_allotment, context_switch_time, processes):
         self.time = 0
@@ -67,6 +97,8 @@ class MLFQ:
                     self.in_io.remove(process)
                 else:
                     process.io_times[process.io_index] -= 1
+            if self.context_switch_time == 0:
+                self.is_context_switching == False 
             if self.context_switch_time > 0 and self.is_context_switching:
                 self.context_switch_time -= 1
                 continue
