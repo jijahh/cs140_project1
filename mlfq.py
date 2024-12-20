@@ -55,9 +55,9 @@ class Queue_1(Queue):
         self.curr_time_quantum -= 1
         self.running_process.burst_times[0] -= 1
         self.running_process.time_allotment -= 1
-        print(self.running_process.time_allotment)
-        print(self.curr_time_quantum)
-        print(self.running_process.burst_times[0])
+        # print(self.running_process.time_allotment)
+        # print(self.curr_time_quantum)
+        # print(self.running_process.burst_times[0])
         if self.running_process.burst_times[0] == 0:
             del self.running_process.burst_times[0]
             if not self.running_process.check_io():
@@ -171,7 +171,7 @@ class MLFQ:
         context_switch_time,
         processes,
     ):
-        self.time = 0
+        self.time = 1
         self.queue_list = [
             Queue_1(queue1_time_allotment),
             Queue_2(queue2_time_allotment),
@@ -193,10 +193,11 @@ class MLFQ:
                 filter(lambda x: x.has_arrived == False, self.not_arrived)
             )
             for process in self.not_arrived:
-                if process.arrival_time == self.time:
+                if process.arrival_time == self.time or (process.arrival_time == 0 and self.time == 1):
                     self.to_print[0].append(process.name)
                     process.has_arrived = True
                     self.queue_list[0].enqueue(process)
+                    print(self.queue_list[0].ready_queue)
             for i in self.queue_list:
                 if i.ready_queue:
                     self.active_queue = i
@@ -259,10 +260,14 @@ class MLFQ:
             print(f"{i} DONE")
         print("Queues :", end=" ")
         print(
+            # [   self.to_print[2][0],
+            #     self.to_print[2][1],
+            #     self.to_print[2][2],
             [
-                self.to_print[2][x][1:] if x == 0 else self.to_print[2][x]
+                self.to_print[2][x][1:] if x == self.queue_list.index(self.active_queue) else self.to_print[2][x]
                 for x in range(len(self.to_print[2]))
             ]
+            # ]
         )
         print(f"CPU: {self.to_print[3]}")
         print(f"I/O: {self.to_print[4]}")
@@ -306,8 +311,8 @@ for i in range(num_processes):
             burst_times.append(int(process_deets[i]))
         else:
             io_times.append(int(process_deets[i]))
+    # print(process_name, burst_times, io_times, arrival_time)
     processes.append(Process(process_name, burst_times, io_times, arrival_time))
-
 
 mlfq = MLFQ(
     num_processes,
