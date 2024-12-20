@@ -18,6 +18,7 @@ class Process:
         self.queue = "queue_1"
         self.has_arrived = False
         self.is_waiting = True
+        self.io_index = 0
 
 
 class Queue:
@@ -48,19 +49,38 @@ class MLFQ:
         self.active_queue = queue_list[0]
         self.not_arrived = processes
         self.context_switch_time = context_switch_time
+        self.in_io = []
+        self.is_done = False
     def run(self):
-        while self.not_arrived:
-            for process in self.not_arrived:
-                if process.arrival_time == self.time:
-                    process.has_arrived = True
-                    self.queue_list[0].ready_queue.append(process)
-                    process.has_arrived = True
-                    self.not_arrived.remove(process)
-            if self.context_switch_time > 0:
-                self.context_switch_time -= 1
-                continue
-            self.active_queue.run()
+        while True:
+            while self.not_arrived:
+                for process in self.not_arrived:
+                    if process.arrival_time == self.time:
+                        process.has_arrived = True
+                        self.queue_list[0].ready_queue.append(process)
+                        process.has_arrived = True
+                        self.not_arrived.remove(process)
+                if self.context_switch_time > 0:
+                    self.context_switch_time -= 1
+                    continue
+                self.active_queue.run()
+            for process in self.in_io:
+                if process.io_times[process.io_index] == 0:
+                    process.io_index += 1
+                    pocess.queue.active_queue.ready_queue.append(process)
+                    self.in_io.remove(process)
+                else:
+                    process.io_times[process.io_index] -= 1
+            if check_done():
+                break
             self.time += 1
+    def check_done(self):
+        for queue in self.queue_list:
+            if queue.ready_queue:
+                return False
+        if self.in_io:
+            return False
+        return True
 
 
 print("# Enter Scheduler Details #")
