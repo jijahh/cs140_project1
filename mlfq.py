@@ -206,7 +206,9 @@ class MLFQ:
                 filter(lambda x: x.has_arrived == False, self.not_arrived)
             )
             for process in self.not_arrived:
-                if process.arrival_time == self.time or (process.arrival_time == 0 and self.time == 1):
+                if process.arrival_time == self.time or (
+                    process.arrival_time == 0 and self.time == 1
+                ):
                     self.to_print[0].append(process.name)
                     process.has_arrived = True
                     self.queue_list[0].enqueue(process)
@@ -215,18 +217,19 @@ class MLFQ:
                 if i.ready_queue:
                     self.active_queue = i
                     break
-            self.active_queue.run(self)
             for i in self.queue_list:
-                if i.ready_queue: 
+                if i.ready_queue:
                     for j in i.ready_queue:
                         if j.is_waiting and self.time != 1:
                             j.wait_time += 1
                             # print("----------------")
                             # print(f"waiting process: {j.name}, total: {j.wait_time}")
-                if self.is_context_switching:
-                    self.time += self.context_switch_time
+            if self.is_context_switching:
+                if self.context_switch_time == 0:
                     self.is_context_switching = False
-                    # print("Context Switching")
+                self.context_switch_time -= 1
+            else:
+                self.active_queue.run(self)
             for i in self.queue_list:
                 if i.ready_queue:
                     self.active_queue = i
@@ -290,7 +293,11 @@ class MLFQ:
             #     self.to_print[2][1],
             #     self.to_print[2][2],
             [
-                self.to_print[2][x][1:] if x == self.queue_list.index(self.active_queue) else self.to_print[2][x]
+                (
+                    self.to_print[2][x][1:]
+                    if x == self.queue_list.index(self.active_queue)
+                    else self.to_print[2][x]
+                )
                 for x in range(len(self.to_print[2]))
             ]
             # ]
@@ -349,4 +356,3 @@ mlfq = MLFQ(
     processes,
 )
 mlfq.run()
-
