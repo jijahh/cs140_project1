@@ -44,8 +44,6 @@ class Queue_1(Queue):
         self.time_quantum = 4
         self.curr_time_quantum = 4
         self.time_allotment = time_allotment
-        self.context_switch_time = 0
-        self.is_context_switching = False
 
     def run(self, mlfq):
         if not self.ready_queue:
@@ -53,7 +51,7 @@ class Queue_1(Queue):
         if self.running_process is None:
             self.running_process = self.ready_queue[0]
         self.curr_time_quantum -= 1
-        self.is_context_switching = False
+        mlfq.is_context_switching = False
         self.running_process.is_waiting = False
         self.running_process.burst_times[0] -= 1
         self.running_process.time_allotment -= 1
@@ -61,7 +59,7 @@ class Queue_1(Queue):
         # print(self.curr_time_quantum)
         # print(self.running_process.burst_times[0])
         if self.running_process.burst_times[0] == 0:
-            self.is_context_switching = True
+            mlfq.is_context_switching = True
             del self.running_process.burst_times[0]
             if not self.running_process.check_io():
                 mlfq.in_io.append(self.running_process)
@@ -77,7 +75,7 @@ class Queue_1(Queue):
             self.running_process is not None
             and self.running_process.time_allotment == 0
         ):
-            self.is_context_switching = True
+            mlfq.is_context_switching = True
             self.running_process.is_waiting = True
             mlfq.to_print[5].append(self.running_process.name)
             self.running_process.queue += 1
@@ -86,7 +84,7 @@ class Queue_1(Queue):
             self.running_process = None
             self.curr_time_quantum = self.time_quantum
         elif self.curr_time_quantum == 0:
-            self.is_context_switching = True
+            mlfq.is_context_switching = True
             self.running_process.is_waiting = True
             self.ready_queue.append(self.running_process)
             del self.ready_queue[0]
@@ -108,10 +106,12 @@ class Queue_2(Queue):
             return
         if self.running_process is None:
             self.running_process = self.ready_queue[0]
+        mlfq.is_context_switching = False
         self.running_process.is_waiting = False
         self.running_process.burst_times[0] -= 1
         self.running_process.time_allotment -= 1
         if self.running_process.burst_times[0] == 0:
+            mlfq.is_context_switching = True
             if not self.running_process.check_io():
                 mlfq.in_io.append(self.running_process)
             else:
@@ -123,6 +123,7 @@ class Queue_2(Queue):
             self.ready_queue.remove(self.running_process)
             self.running_process = None
         if self.running_process.time_allotment == 0:
+            mlfq.is_context_switching = True
             self.running_process.queue += 1
             self.running_process.is_waiting = True
             mlfq.queue_list[self.running_process.queue].enqueue(self.running_process)
@@ -146,9 +147,11 @@ class Queue_3(Queue):
         if self.running_process is None:
             self.running_process = self.ready_queue[0]
 
+        mlfq.is_context_switching = False
         self.running_process.is_waiting = False
         self.running_process.burst_times[0] -= 1
         if self.running_process.burst_times[0] == 0:
+            mlfq.is_context_switching = True
             del self.running_process.burst_times[0]
             if not self.running_process.check_io():
                 mlfq.in_io.append(self.running_process)
@@ -216,9 +219,14 @@ class MLFQ:
             for i in self.queue_list:
                 if i.ready_queue: 
                     for j in i.ready_queue:
-                        if j.is_waiting:
+                        if j.is_waiting and self.time != 1:
                             j.wait_time += 1
-                            print(f"waiting process: {j.name}, total: {j.wait_time}")
+                            # print("----------------")
+                            # print(f"waiting process: {j.name}, total: {j.wait_time}")
+                if self.is_context_switching:
+                    self.time += self.context_switch_time
+                    self.is_context_switching = False
+                    # print("Context Switching")
             for i in self.queue_list:
                 if i.ready_queue:
                     self.active_queue = i
@@ -270,7 +278,7 @@ class MLFQ:
             self.queue_list[process.queue].ready_queue.append(process)
 
     def print_everything(self):
-        print(f"At time {self.time}")
+        print(f"At time {self.time - 1}")
         if self.to_print[0]:
             print("Arriving :", end=" ")
             print(self.to_print[0])
@@ -292,6 +300,7 @@ class MLFQ:
         for i in self.to_print[5]:
             print(f"{i} DEMOTED")
         self.to_print = [[], [], [[], [], []], [], [], []]
+        print("\n")
 
     def done(self):
         print("SIMULATION DONE")
@@ -340,3 +349,4 @@ mlfq = MLFQ(
     processes,
 )
 mlfq.run()
+
