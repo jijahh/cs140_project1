@@ -217,6 +217,7 @@ class MLFQ:
                 if i.ready_queue:
                     self.active_queue = i
                     break
+            self.active_queue.run(self)
             for i in self.queue_list:
                 if i.ready_queue:
                     for j in i.ready_queue:
@@ -224,12 +225,10 @@ class MLFQ:
                             j.wait_time += 1
                             # print("----------------")
                             # print(f"waiting process: {j.name}, total: {j.wait_time}")
-            if self.is_context_switching:
-                if self.context_switch_time == 0:
+                if self.is_context_switching:
+                    self.time += self.context_switch_time
                     self.is_context_switching = False
-                self.context_switch_time -= 1
-            else:
-                self.active_queue.run(self)
+                    # print("Context Switching")
             for i in self.queue_list:
                 if i.ready_queue:
                     self.active_queue = i
